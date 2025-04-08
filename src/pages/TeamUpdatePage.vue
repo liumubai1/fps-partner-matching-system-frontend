@@ -106,7 +106,6 @@ const onSubmit = async () => {
     ...addTeamData.value,
     status: Number(addTeamData.value.status)
   }
-  // todo 前端参数校验
   const res = await myAxios.post("/team/update", postData);
   if (res?.code === 0 && res.data){
     Toast.success('更新成功');
