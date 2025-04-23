@@ -20,7 +20,8 @@ myAxios.defaults.withCredentials = true; // 配置为true
 
 
 // Add a request interceptor
-myAxios.interceptors.request.use(function (config) {
+myAxios.interceptors.request.use(function (
+    config) {
     console.log('我要发请求啦', config)
     // Do something before request is sent
     return config;

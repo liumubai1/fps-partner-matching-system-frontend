@@ -24,14 +24,36 @@
           placeholder="请再次输入密码"
           :rules="[{ required: true, message: '请再次输入密码' }]"
       />
-      <van-field
-          v-model="planetCode"
-          name="planetCode"
-          label="星球编号"
-          placeholder="请输入星球编号"
-          :rules="[{ required: true, message: '请输入星球编号' }]"
+
+      <!-- 性别选择 -->
+      <van-field name="gender" label="性别">
+        <template #input>
+          <van-radio-group v-model="gender" direction="horizontal">
+            <van-radio name="male">男</van-radio>
+            <van-radio name="female">女</van-radio>
+          </van-radio-group>
+        </template>
+      </van-field>
+
+      <!-- 标签选择组件 -->
+      <van-divider content-position="left">游戏标签（多选）</van-divider>
+      <div v-if="selectedTags.length === 0" style="padding: 0 16px; color: #969799;">
+        请选择至少一个游戏标签
+      </div>
+      <van-row gutter="16" style="padding: 0 16px">
+        <van-col v-for="tag in selectedTags" :key="tag" style="margin-bottom: 8px;">
+          <van-tag closeable size="small" type="primary" @close="removeTag(tag)">
+            {{ tag }} <!-- 直接显示中文 -->
+          </van-tag>
+        </van-col>
+      </van-row>
+      <van-tree-select
+          v-model:active-id="selectedTags"
+          :items="tagOptions"
+          :main-active-index="0"
       />
     </van-cell-group>
+
     <div style="margin: 16px;">
       <van-button round block type="primary" native-type="submit">
         注册
@@ -45,42 +67,77 @@
 </template>
 
 <script setup lang="ts">
-import {ref} from "vue";
+import { ref } from "vue";
 import myAxios from "../plugins/myAxios";
-import {Toast} from "vant";
-import {useRouter} from "vue-router";
+import { Toast } from "vant";
+import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-const userAccount = ref('');
-const userPassword = ref('');
-const checkPassword = ref('');
-const planetCode = ref('');
+// 表单数据
+const userAccount = ref("");
+const userPassword = ref("");
+const checkPassword = ref("");
+const gender = ref("male");
+const selectedTags = ref<string[]>([]); // 存储选中标签的中文
 
+// 游戏标签选项配置（使用中文作为id）
+const tagOptions = [
+  {
+    text: "FPS游戏",
+    children: [
+      { text: "apex", id: "apex" },
+      { text: "csgo", id: "csgo" },
+      { text: "守望先锋", id: "守望先锋" },
+      { text: "Valorant", id: "Valorant" },
+      { text: "三角洲行动", id: "三角洲行动" },
+    ],
+  },
+];
+
+// 移除标签
+const removeTag = (tag: string) => {
+  selectedTags.value = selectedTags.value.filter((t) => t !== tag);
+};
+
+// 提交表单
 const onSubmit = async () => {
+  // 密码验证
   if (userPassword.value !== checkPassword.value) {
-    Toast.fail('两次输入的密码不一致');
+    Toast.fail("两次输入的密码不一致");
     return;
   }
 
-  const res = await myAxios.post('/user/register', {
-    userAccount: userAccount.value,
-    userPassword: userPassword.value,
-    checkPassword: checkPassword.value,
-    planetCode: planetCode.value,
-  });
+  // 标签验证
+  if (selectedTags.value.length === 0) {
+    Toast.fail("请至少选择一个游戏标签");
+    return;
+  }
 
-  console.log(res, '用户注册');
-  if (res.code === 0 && res.data) {
-    Toast.success('注册成功');
-    // 注册成功后跳转到登录页面
-    router.push('/user/login');
-  } else {
-    Toast.fail('注册失败');
+  try {
+    const res = await myAxios.post("/user/register", {
+      userAccount: userAccount.value,
+      userPassword: userPassword.value,
+      checkPassword: checkPassword.value,
+      gender: gender.value,
+      tags: selectedTags.value, // 直接传递中文标签
+    });
+
+    if (res.code === 0 && res.data) {
+      Toast.success("注册成功");
+      router.push("/user/login");
+    } else {
+      Toast.fail(res.description || "注册失败");
+    }
+  } catch (error) {
+    Toast.fail("注册请求失败");
   }
 };
 </script>
 
 <style scoped>
-
+/* 自定义样式 */
+.van-tag {
+  margin-right: 8px;
+}
 </style>
